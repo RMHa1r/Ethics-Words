@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="事項説明">
+<meta name="theme-color" content="#E6E9E4">
+<title>事項説明カード｜北大院試</title>
+<style>
+  :root{
+    --ink:#1C1F26; --ai:#2A3A5C; --shu:#B23A2B; --paper:#FDFDFB;
+    --ground:#E6E9E4; --rule:#C3CBD3; --take:#3F7A5E; --faint:#8A9099;
+    --mincho:"Hiragino Mincho ProN","YuMincho","Yu Mincho","MS Mincho",serif;
+    --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ground); color:var(--ink); font-family:var(--gothic);
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:430px;margin:0 auto;padding:12px 12px 28px}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .eyebrow{font-size:11px;letter-spacing:2px;color:var(--ai)}
+  .sub{font-size:10px;color:var(--faint);margin-top:2px}
+  button{font-family:inherit;cursor:pointer}
+  .btn-sm{font-size:11px;padding:6px 10px;border-radius:3px;border:1px solid var(--ai);
+    background:transparent;color:var(--ai)}
+  .btn-sm.on{background:var(--ai);color:var(--paper)}
+  .eras{overflow-x:auto;white-space:nowrap;margin:10px 0 12px;padding-bottom:4px;
+    -webkit-overflow-scrolling:touch}
+  .chip{font-size:11px;padding:5px 11px;margin-right:6px;border-radius:999px;
+    border:1px solid var(--rule);background:var(--paper);color:var(--faint)}
+  .chip.on{border-color:var(--ai);background:var(--ai);color:var(--paper)}
+  .card{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--ai);
+    border-radius:3px;min-height:360px}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--rule);padding:8px 14px}
+  .tag{font-size:10px;color:var(--faint);letter-spacing:1px}
+  .timer{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .timer.over{color:var(--shu)}
+  .front{padding:56px 20px;text-align:center}
+  .term{font-family:var(--mincho);font-size:26px;line-height:1.5}
+  .hint{font-size:11px;color:var(--faint);margin-top:40px}
+  .back{padding:14px 16px 18px}
+  .back-term{font-size:11px;color:var(--ai);margin-bottom:10px}
+  .ruled{font-family:var(--mincho);font-size:15px;line-height:28px;
+    background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,
+      var(--rule) 27px,var(--rule) 28px);padding-bottom:2px}
+  .count{font-size:10px;color:var(--faint);text-align:right;margin-top:6px}
+  .memo{margin-top:12px;border-left:2px solid var(--shu);padding-left:10px;
+    font-size:12px;line-height:1.7;color:var(--shu)}
+  .controls{display:flex;gap:8px;margin-top:12px}
+  .big{flex:1;padding:14px;border-radius:3px;font-size:14px}
+  .again{border:1px solid var(--shu);background:var(--paper);color:var(--shu)}
+  .good{border:1px solid var(--take);background:var(--take);color:var(--paper)}
+  .reveal{width:100%;padding:14px;margin-top:12px;border-radius:3px;
+    border:1px solid var(--ai);background:var(--paper);color:var(--ai);font-size:14px}
+  .pos{text-align:center;font-size:10px;color:var(--faint);margin-top:14px}
+  .form{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:14px}
+  .form label{display:block;font-size:12px;color:var(--ai);margin-bottom:10px}
+  .form input,.form select,.form textarea{width:100%;font-family:inherit;font-size:14px;
+    padding:8px;margin-bottom:8px;border:1px solid var(--rule);border-radius:3px;background:var(--paper)}
+  .form textarea{font-family:var(--mincho);line-height:1.7}
+  .save{width:100%;padding:12px;background:var(--ai);color:var(--paper);border:none;
+    border-radius:3px;font-size:14px}
+  .empty{background:var(--paper);border:1px solid var(--rule);border-radius:4px;
+    padding:28px;text-align:center;color:var(--faint);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row">
+    <div>
+      <div class="eyebrow">事項説明問題</div>
+      <div class="sub" id="stats"></div>
+    </div>
+    <button class="btn-sm" id="addBtn">追加</button>
+  </div>
+  <div class="eras" id="eras"></div>
+  <div id="main"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var ERAS=["古代","中世","近世","カント","19世紀","現象学","論理・言語","現代倫理"];
+
+var DECK=[
+{id:"c01",era:"古代",term:"洞窟の比喩",body:"プラトン『国家』第七巻で語られる、教育と実在認識をめぐる比喩。洞窟に縛られた囚人は壁に映る影を実在と信じているが、解放され外へ出れば、太陽の光のもとで事物そのものを見る。影は感覚的世界、洞窟の外はイデア界、太陽は善のイデアに対応する。認識の上昇は同時に魂の向け変え（ペリアゴーゲー）であり、真理を知った者が再び洞窟へ戻り統治すべきだとする哲人王論へと接続する。",memo:"影＝感覚界／太陽＝善のイデア。哲人王とセットで想起する。"},
+{id:"c02",era:"古代",term:"四原因説（アリストテレス）",body:"事物の生成・存在を説明するために、アリストテレスが立てた四種の原因。質料因（何からできているか）、形相因（何であるか）、始動因（何が動かしたか）、目的因（何のためにあるか）。プラトンがイデアを事物の外に置いたのに対し、形相を個物に内在するものとした点に特徴がある。とりわけ目的因を自然全体に認める目的論的自然観は、中世スコラ学に継承され、近代機械論的自然観によって批判された。",memo:"目的因は単独でも出題例あり（2024前）。近代の機械論との対比で締める。"},
+{id:"c03",era:"古代",term:"ポリス的動物（アリストテレス）",body:"『政治学』におけるアリストテレスの人間規定。人間は自然本性上ポリス（国家）を形成して生きる動物であり、ポリスの外で生きうるのは獣か神のみであるとされる。人間はロゴス（言語・理性）を有し、有益と有害、正と不正を語り合うことができる点で他の群棲動物と区別される。したがってポリスは単なる生存のための集団ではなく、善き生（エウ・ゼーン）の実現を目的とする共同体として位置づけられる。",memo:"「生きること」ではなく「善く生きること」が目的。社会契約論との対比が有効。"},
+{id:"c04",era:"古代",term:"万物流転説",body:"ヘラクレイトスに帰される、あらゆるものは絶えず変化し留まることがないとする思想。「同じ川に二度入ることはできない」という言葉に象徴される。ただし彼は無秩序な変化を説いたのではなく、対立するものの抗争と均衡を貫くロゴスによって世界に秩序が保たれるとした。存在の不変性を説いたパルメニデスと対比され、生成と存在をめぐる古代ギリシアの根本対立を形づくった。",memo:"パルメニデスとの対比で覚える。2026年度は前期・後期の両方で出題された。"},
+{id:"c05",era:"古代",term:"哲人王（プラトン）",body:"『国家』において示された、哲学者が統治者となるか統治者が哲学するのでなければ国家の不幸は止まないとする主張。善のイデアを認識した者のみが、真に公共の利益を判断しうるとされる。魂の三部分（理性・気概・欲望）と国家の三階級（統治者・防衛者・生産者）との類比に基づき、各部分が自己の職分を果たすときに正義が成立すると論じられる。私有財産と家族の廃止など、統治者階級への厳しい制約を伴う。",memo:"魂と国家の類比（アナロジー）が論述問題の定番。"},
+{id:"c06",era:"中世",term:"「五つの道」（トマス・アクィナス）",body:"トマス・アクィナスが『神学大全』で示した、神の存在を後天的（ア・ポステリオリ）に証明する五つの論証。第一に運動から不動の第一動者へ、第二に作用因（始動因）の系列から第一原因へ、第三に偶然的存在から必然的存在へ、第四に完全性の段階から最高完全者へ、第五に自然物の目的指向性から秩序づける知性へと遡る。前三者は宇宙論的証明、第五は目的論的証明の古典的形態であり、いずれも無限背進の否定を鍵とする。",memo:"共通構造＝「経験的事実→無限背進の否定→第一項＝神」。アンセルムスのア・プリオリ証明と対比。"},
+{id:"c07",era:"中世",term:"存在の一義性（ドゥンス・スコトゥス）",body:"存在（ens）という概念が、神と被造物とを問わず同一の意味で述語づけられるとする、ドゥンス・スコトゥスの学説。トマス・アクィナスは神と被造物の存在は類比によってのみ語りうるとしたが、スコトゥスは、存在概念が一義的でなければ被造物から神を推論する自然神学は多義の誤謬に陥ると論じた。一義的であるのは存在の「概念」であって、神の無限性と被造物の有限性という存在様態の差異は保持される。",memo:"一義的なのは「概念」であって「存在様態」ではない。後にスピノザ・ドゥルーズへ。"},
+{id:"c08",era:"中世",term:"存在の類比（アナロギア）",body:"神と被造物について「存在する」と語るとき、その語は同一の意味（一義的）でも全く別の意味（多義的）でもなく、類比的に用いられるとするトマス・アクィナスの学説。一義的であれば神を被造物と同一平面に置くことになり、多義的であれば被造物からの神認識が不可能になる。両極を避けることで、神の超越性を保持しつつ有限な言語による神への言及を可能にする。ドゥンス・スコトゥスの一義性説と鋭く対立する。",memo:"一義／多義の両極を避ける中間項。スコトゥスとセットで反転暗記。"},
+{id:"c09",era:"中世",term:"神の存在論的証明（アンセルムス）",body:"アンセルムスが『プロスロギオン』で示した、神の概念のみから神の存在を導くア・プリオリな証明。神とは「それより大なるものが考えられないもの」であり、そのようなものが知性のうちにのみ存在し実在しないと仮定すれば、実在するものの方がより大であるから矛盾する。ゆえに神は実在する。同時代のガウニロが批判し、後にカントが「存在は実在的述語ではない」として斥けたことで知られる。",memo:"トマス＝ア・ポステリオリ／アンセルムス＝ア・プリオリ。カントの批判まで書けると強い。"},
+{id:"c10",era:"中世",term:"唯名論",body:"普遍は事物に先立って実在するのではなく、個物のみが実在し、普遍は名辞ないし概念にすぎないとする立場。中世の普遍論争において実在論と対立し、ロスケリヌスに始まりオッカムによって精緻化された。オッカムは「必要なしに存在者を増やしてはならない」とする節約原理（オッカムの剃刀）を用い、普遍を心のうちの記号として説明した。個物と経験を重視するその方向は、近代の経験論への道を開いたと評価される。",memo:"実在論⇔唯名論。オッカムの剃刀を必ず添える。"},
+{id:"c11",era:"近世",term:"公平な観察者（アダム・スミス）",body:"アダム・スミスが『道徳感情論』で提示した、道徳判断の基準となる想像上の第三者。人は他者の境遇に想像上身を置いて共感（sympathy）し、また自らの行為を、利害関心をもたない公平な観察者の眼から眺めることで是認・否認を下す。良心とはこの観察者を自己の内に取り込んだものとされる。道徳を理性的原理からではなく、人間の感情の働きから説明する道徳感情論の中核をなす概念である。",memo:"自分の卒論でも用いた概念。共感（sympathy）と良心の内面化を押さえる。"},
+{id:"c12",era:"近世",term:"市場のイドラ（ベーコン）",body:"フランシス・ベーコンが『ノヴム・オルガヌム』で挙げた四つのイドラ（偏見）のうち、言語の不適切な使用から生じるもの。人々の交わり（市場）における言葉のやりとりが、実在しないものに名を与えたり、曖昧な語を用いたりすることで思考を誤らせる。他に、人間本性に由来する種族のイドラ、個人の性癖による洞窟のイドラ、権威や学説の受容による劇場のイドラがある。帰納法による自然探究の前提として、これらの除去が求められる。",memo:"四つのイドラは一括で暗記。種族・洞窟・市場・劇場。"},
+{id:"c13",era:"近世",term:"社会契約（ルソー）",body:"『社会契約論』において、各人が自己のすべての権利を共同体全体に譲渡することで成立するとされる結合の形式。各人は全体に対して自己を与えるがゆえに誰か特定の他者に従属せず、以前と同じく自由でありうるとされる。ここで形成される一般意志は、個別利益の総和である全体意志とは区別され、常に公共の利益を志向する。主権は一般意志の行使であり、譲渡も分割もできないとして代議制を批判した。",memo:"一般意志⇔全体意志の区別が最頻出。ホッブズ・ロックとの三者比較で。"},
+{id:"c14",era:"近世",term:"理性は情念の奴隷である（ヒューム）",body:"『人間本性論』におけるヒュームの主張。理性は観念間の関係や事実を認識する能力にすぎず、それ自体では行為の動機となりえない。行為を導くのは情念であり、理性はその目的を達する手段を示すにとどまる。ゆえに理性は情念に仕えるべきものだとされる。この見解は、道徳判断が理性ではなく道徳感情に由来するとする道徳感情論の基礎をなし、事実命題から当為命題は導けないとする「ヒュームの法則」とも連関する。",memo:"動機づけの議論。現代メタ倫理の内在主義・非認知主義の源流として位置づける。"},
+{id:"c15",era:"近世",term:"神即自然（スピノザ）",body:"スピノザ『エチカ』の根本命題で、神と自然とを同一視する汎神論的立場。実体は自己原因的で無限なもの一つのみであり、それが神であると同時に自然である。神は世界を外部から創造する超越的人格ではなく、万物がそのうちに内在する唯一の実体とされる。自然は能産的自然（産出する神）と所産的自然（産出された様態）とに区別される。目的論を斥け、すべては神の本性の必然性から生起するとされる。",memo:"能産的自然／所産的自然の区別。目的論の否定まで書く。"},
+{id:"c16",era:"カント",term:"アプリオリな総合判断",body:"経験に依存せず（アプリオリ）、かつ主語概念に含まれない内容を述語が付け加える（総合的）判断。カントは『純粋理性批判』において、数学や自然科学の基礎命題がこの種の判断であるとし、「アプリオリな総合判断はいかにして可能か」を批判哲学の中心問題に据えた。その解決として、空間・時間という感性の形式と、カテゴリーという悟性の形式が対象の側ではなく認識主観の側にあるとする、いわゆるコペルニクス的転回が導入される。",memo:"分析／総合、アプリオリ／アポステリオリの二軸の交点。転回と接続させる。"},
+{id:"c17",era:"カント",term:"目的の国",body:"カントが『道徳形而上学の基礎づけ』で示した、すべての理性的存在者が共通の法則によって体系的に結合された理想的共同体。各人は自らが立法者でありながら同時にその法則に服する成員として、互いを単なる手段としてではなく常に同時に目的として扱う。定言命法の第三の方式（自律の方式）に対応し、人格の尊厳の根拠を示す。実在する国家ではなく理念であるが、道徳的行為の指針として要請される。",memo:"定言命法の諸方式（普遍的法則・人間性・自律）とセット。ロールズの背景でもある。"},
+{id:"c18",era:"カント",term:"コペルニクス的転回",body:"認識が対象に従うのではなく、対象が認識に従うとするカントの視点変更。従来の形而上学は、認識主観が独立に存在する対象に一致することを求めたが、それではアプリオリな認識の普遍妥当性を説明できない。そこでカントは、空間・時間の直観形式とカテゴリーが対象経験を構成すると考えた。これにより現象については必然的認識が可能となる一方、物自体は認識しえないものとして残され、批判哲学の枠組みが定まる。",memo:"帰結として物自体の不可知が出る。ここまで書けば完成度が上がる。"},
+{id:"c19",era:"19世紀",term:"力への意志",body:"ニーチェが世界と生の根本原理として提示した概念。生あるものは単に自己保存を目指すのではなく、より強くあろうとし、自己を超え出て支配し形成しようとする。この観点から、既存の道徳は弱者が強者への怨恨（ルサンチマン）から作り出した価値の転倒として批判される。神の死とニヒリズムの到来を診断したうえで、既成の価値を破壊し新たな価値を創造する超人の理念と結びつけられる。",memo:"ルサンチマン・神の死・ニヒリズム・超人・永遠回帰は一群として想起する。"},
+{id:"c20",era:"19世紀",term:"上部構造と下部構造（マルクス）",body:"唯物史観における社会の二層構造。生産力と生産関係からなる経済的構造が下部構造（土台）をなし、その上に法律的・政治的な制度および社会的意識諸形態が上部構造として立つ。人間の意識が存在を規定するのではなく、社会的存在が意識を規定するとされる。生産力の発展が既存の生産関係と矛盾するとき社会革命の時期が到来し、上部構造もまた変革されるという歴史発展の図式が示される。",memo:"「意識が存在を規定するのではなく、存在が意識を規定する」を必ず入れる。"},
+{id:"c21",era:"現象学",term:"世界内存在（ハイデガー）",body:"『存在と時間』において現存在（人間）の根本機構を表す語。人間はまず孤立した主観として存在し後から世界と関係するのではなく、はじめから世界のうちに投げ込まれ、道具的存在者と交渉しつつ生きている。「内存在」は容器の中にあることではなく、何かに親しみ関わることを意味する。これにより主観／客観の二分に基づく近代認識論の枠組みが根本的に問い直される。",memo:"デカルト的主観―客観図式の解体という位置づけが要点。"},
+{id:"c22",era:"現象学",term:"現象学的還元",body:"フッサールが現象学の方法として定式化した手続き。世界が事実として存在するという自然的態度の一般定立をいったん働かせないようにし（エポケー＝判断中止）、対象の実在についての判断を括弧に入れる。これにより、意識に現れる限りでの現象そのものへと視線が向け変えられ、意識の志向的構造の記述が可能になる。さらに個別的事例から本質を取り出す形相的還元と区別して論じられる。",memo:"エポケー＝括弧入れ。形相的還元との区別を一言添える。"},
+{id:"c23",era:"論理・言語",term:"Sinn と Bedeutung（フレーゲ）",body:"フレーゲが「意義と意味について」で導入した区別。「明けの明星」と「宵の明星」は同一の対象（Bedeutung＝意味・指示対象）を指すが、その与えられ方（Sinn＝意義）が異なる。この区別により、同一性言明が単なる同語反復ではなく認識を拡張しうることが説明される。文においては、Sinn は思想（命題内容）、Bedeutung は真理値であるとされ、以後の言語哲学における意味理論の出発点となった。",memo:"明けの明星／宵の明星の例は必ず入れる。文レベルでは Bedeutung＝真理値。"},
+{id:"c24",era:"論理・言語",term:"反証可能性（ポパー）",body:"ある理論が科学的であるための基準として、ポパーが提示した性質。理論は経験によって反証されうる形式をもつ限りで科学的であり、いかなる事象によっても反駁されえない理論は科学ではないとされる。検証によって理論を基礎づけようとする論理実証主義の立場を、帰納の問題を理由に斥け、科学の進歩を大胆な推測と厳しい反駁の反復として描いた。精神分析やマルクス主義を疑似科学として批判した点でも知られる。",memo:"検証主義（論理実証主義）との対比が核。帰納の問題への応答という文脈で。"},
+{id:"c25",era:"現代倫理",term:"反照的均衡",body:"ロールズが『正義論』で用いた、道徳理論の正当化方法。個別事例についての熟慮された判断と、それを説明する一般原理との間を往復し、必要に応じて双方を修正しながら整合的な状態に到達することを指す。原理から演繹するのでも直観を無批判に受け入れるのでもない点に特徴がある。さらに、対立する諸構想を検討したうえで到達される広い反照的均衡と、そうでない狭い反照的均衡とが区別される。",memo:"広い／狭いの区別まで書くと差がつく。原初状態の正当化装置として機能する。"},
+{id:"c26",era:"現代倫理",term:"ケイパビリティ・アプローチ",body:"アマルティア・センが提唱し、ヌスバウムが展開した福祉と正義の評価枠組み。人の境遇を財の量や主観的効用によってではなく、実際に何をなしうるか、どのような状態でありうるかという実質的自由（ケイパビリティ）によって評価する。同じ財を得ても、障害などにより達成しうる機能が異なることを捉えうる点で、ロールズの基本財による評価を批判する。ヌスバウムは中心的な人間的ケイパビリティのリストを提示した。",memo:"ロールズの基本財批判という文脈で書く。機能（functioning）との区別も。"},
+{id:"c27",era:"現代倫理",term:"世代間倫理",body:"現在世代が将来世代に対して負う道徳的責任をめぐる領域。環境破壊や資源枯渇、放射性廃棄物の処理などにより、現在の行為の帰結が遠い将来にまで及ぶことから生じる。将来世代は現在世代と相互性をもたず、また契約の当事者となりえないため、互恵性に基づく従来の正義論では扱いにくい。さらに、行為の選択が将来生まれる人々の同一性そのものを変えてしまうという非同一性問題が、パーフィットによって提起されている。",memo:"非同一性問題（パーフィット）を必ず添える。奥野先生の専門と直結。"},
+{id:"c28",era:"現代倫理",term:"表出主義",body:"道徳的言明は世界についての事実を記述するものではなく、話者の態度や情動を表出するものだとするメタ倫理学の立場。「Xは悪い」は X についての命題を述べているのではなく、X への否認を表明していると解される。エイヤーの情動主義やヘアの指令主義を先駆とし、ブラックバーンの準実在論やギバードの規範表出主義へと展開した。道徳言明が論理的推論に現れうることをどう説明するか（フレーゲ＝ギーチ問題）が主要な課題となる。",memo:"フレーゲ＝ギーチ問題まで書けると院試レベル。2026前期の英文はブラックバーン。"},
+{id:"c29",era:"現代倫理",term:"認識的不正義",body:"ミランダ・フリッカーが提示した、人が知る主体としての立場において被る不正義。偏見によって証言の信頼性が不当に低く見積もられる証言的不正義と、自己の経験を理解し表現するための解釈資源が社会的に欠如しているために生じる解釈的不正義とに区別される。分配の対象とはなりにくい認識的な財の不平等を問題化した点で、従来の分配的正義論を補完する視座を提供する。",memo:"証言的／解釈的の二分が答案の骨格。分配的正義論との関係で締める。"},
+{id:"c30",era:"現代倫理",term:"行為功利主義と規則功利主義",body:"功利主義の二形態。行為功利主義は個々の行為がもたらす帰結の善さによって直接その正しさを判定する。規則功利主義は、一般に受容されたならば最大の効用を生む規則に適合するか否かによって行為を評価する。後者は、約束や正義に関する常識的道徳との衝突を回避しやすい一方、規則遵守が最善の帰結を生まない事例で規則を破るならば行為功利主義に崩れるとの批判（規則崇拝）を受ける。",memo:"規則崇拝（rule worship）の批判が定番の落とし所。ヘアの二層理論へ接続可。"}
+];
+
+var KEY="hokudai-jiko-setsumei-v1";
+var state={progress:{},custom:[]};
+try{
+  var raw=localStorage.getItem(KEY);
+  if(raw){var p=JSON.parse(raw); state.progress=p.progress||{}; state.custom=p.custom||[];}
+}catch(e){}
+
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+}
+
+var era="すべて", idx=0, flipped=false, secs=0, mode="study", timer=null;
+
+function allCards(){return DECK.concat(state.custom);}
+function box(id){return (state.progress[id]&&state.progress[id].box)||1;}
+
+function queue(){
+  var pool=allCards().filter(function(c){return era==="すべて"||c.era===era;});
+  return pool.sort(function(a,b){
+    var d=box(a.id)-box(b.id);
+    return d!==0?d:(a.id<b.id?-1:1);
+  });
+}
+function countJa(s){return (s||"").replace(/\s/g,"").length;}
+function fmt(n){var m=Math.floor(n/60),s=n%60;return m+":"+(s<10?"0"+s:s);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function startTimer(){
+  stopTimer();
+  timer=setInterval(function(){
+    secs++;
+    var el=document.getElementById("timer");
+    if(el){el.textContent=fmt(secs); if(secs>=420){el.className="timer over";}}
+  },1000);
+}
+function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+
+function renderEras(){
+  var host=document.getElementById("eras");
+  var list=["すべて"].concat(ERAS), html="";
+  for(var i=0;i<list.length;i++){
+    html+='<button class="chip'+(era===list[i]?" on":"")+'" data-era="'+esc(list[i])+'">'+esc(list[i])+'</button>';
+  }
+  host.innerHTML=html;
+  var btns=host.getElementsByTagName("button");
+  for(var j=0;j<btns.length;j++){
+    btns[j].onclick=function(){era=this.getAttribute("data-era");idx=0;flipped=false;secs=0;render();};
+  }
+}
+
+function renderStats(){
+  var a=allCards(), m=0;
+  for(var i=0;i<a.length;i++){if(box(a[i].id)>=4)m++;}
+  document.getElementById("stats").textContent="習得 "+m+" / "+a.length+"　・　7分で1問";
+}
+
+function render(){
+  renderStats(); renderEras();
+  var main=document.getElementById("main");
+  document.getElementById("addBtn").className="btn-sm"+(mode==="add"?" on":"");
+
+  if(mode==="add"){
+    stopTimer();
+    var opts="";
+    for(var i=0;i<ERAS.length;i++){opts+='<option value="'+esc(ERAS[i])+'">'+esc(ERAS[i])+'</option>';}
+    main.innerHTML='<div class="form"><label>カードを追加</label>'+
+      '<input id="fTerm" placeholder="用語（例：純粋悟性概念）">'+
+      '<select id="fEra">'+opts+'</select>'+
+      '<textarea id="fBody" rows="7" placeholder="解答（150〜250字）"></textarea>'+
+      '<div class="count" id="fCount">0字</div>'+
+      '<input id="fMemo" placeholder="メモ（対比・注意点）">'+
+      '<button class="save" id="fSave">保存する</button></div>';
+    document.getElementById("fBody").oninput=function(){
+      document.getElementById("fCount").textContent=countJa(this.value)+"字";
+    };
+    document.getElementById("fSave").onclick=function(){
+      var t=document.getElementById("fTerm").value.trim();
+      var b=document.getElementById("fBody").value.trim();
+      if(!t||!b)return;
+      state.custom.push({id:"u"+Date.now(),era:document.getElementById("fEra").value,
+        term:t,body:b,memo:document.getElementById("fMemo").value.trim()});
+      save(); mode="study"; render();
+    };
+    return;
+  }
+
+  var q=queue();
+  if(!q.length){
+    stopTimer();
+    main.innerHTML='<div class="empty">この時代のカードはまだありません。「追加」から作成してください。</div>';
+    return;
+  }
+  var c=q[idx%q.length];
+
+  var head='<div class="sheet-head"><span class="tag">'+esc(c.era)+'</span>'+
+    '<span class="'+(secs>=420?"timer over":"timer")+'" id="timer">'+fmt(secs)+'</span></div>';
+
+  var body;
+  if(!flipped){
+    body='<div class="front"><div class="term">'+esc(c.term)+'</div>'+
+      '<div class="hint">口に出して答えてから、タップして解答</div></div>';
+  }else{
+    body='<div class="back"><div class="back-term">'+esc(c.term)+'</div>'+
+      '<div class="ruled">'+esc(c.body)+'</div>'+
+      '<div class="count">'+countJa(c.body)+'字</div>'+
+      (c.memo?'<div class="memo">'+esc(c.memo)+'</div>':'')+'</div>';
+  }
+
+  var controls=flipped
+    ? '<div class="controls"><button class="big again" id="bAgain">もう一度</button>'+
+      '<button class="big good" id="bGood">書けた</button></div>'
+    : '<button class="reveal" id="bShow">解答を見る</button>';
+
+  main.innerHTML='<div class="card" id="card">'+head+body+'</div>'+controls+
+    '<div class="pos">'+((idx%q.length)+1)+' / '+q.length+'　（'+esc(era)+'）</div>';
+
+  document.getElementById("card").onclick=function(){
+    flipped=!flipped; if(flipped){stopTimer();} else {secs=0;startTimer();} render();
+  };
+  if(!flipped){
+    document.getElementById("bShow").onclick=function(ev){
+      ev.stopPropagation(); flipped=true; stopTimer(); render();
+    };
+    startTimer();
+  }else{
+    document.getElementById("bAgain").onclick=function(){rate(c,false);};
+    document.getElementById("bGood").onclick=function(){rate(c,true);};
+  }
+}
+
+function rate(c,good){
+  var cur=state.progress[c.id]||{box:1,seen:0};
+  state.progress[c.id]={box:good?Math.min(5,cur.box+1):1,seen:cur.seen+1};
+  save(); idx++; flipped=false; secs=0; render();
+}
+
+document.getElementById("addBtn").onclick=function(){
+  mode=(mode==="add")?"study":"add"; render();
+};
+
+render();
+})();
+</script>
+</body>
+</html>
